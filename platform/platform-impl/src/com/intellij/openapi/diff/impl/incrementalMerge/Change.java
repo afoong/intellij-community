@@ -104,9 +104,9 @@ public abstract class Change {
    * @return the resulting TextRange from the target document, or null if the document if not writable.
    */
   @Nullable
-  private static TextRange modifyDocument(@NotNull Project project, @NotNull RangeMarker original, @NotNull RangeMarker target) {
+  private static TextRange modifyDocument(Project project, @NotNull RangeMarker original, @NotNull RangeMarker target) {
     Document document = target.getDocument();
-    if (!ReadonlyStatusHandler.ensureDocumentWritable(project, document)) { return null; }
+    if (project !=null && !ReadonlyStatusHandler.ensureDocumentWritable(project, document)) { return null; }
     if (DocumentUtil.isEmpty(original)) {
       int offset = target.getStartOffset();
       document.deleteString(offset, target.getEndOffset());

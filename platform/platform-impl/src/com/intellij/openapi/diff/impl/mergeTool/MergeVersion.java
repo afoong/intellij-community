@@ -27,7 +27,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.FileTypes;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectCoreUtil;
+import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.project.ex.ProjectManagerEx;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -76,11 +76,11 @@ public interface MergeVersion {
       ApplicationManager.getApplication().runWriteAction(new Runnable() {
         public void run() {
           setDocumentText(workingDocument, myOriginalText, DiffBundle.message("merge.init.merge.content.command.name"), project);
-          if (project != null) {
-            final UndoManager undoManager = UndoManager.getInstance(project);
-            if (undoManager != null) { //idea.sh merge command
-              undoManager.nonundoableActionPerformed(ref, false);
-            }
+          if (project == null) {
+            UndoManager.getGlobalInstance().nonundoableActionPerformed(ref, true);
+          }
+          else {
+            UndoManager.getInstance(project).nonundoableActionPerformed(ref, false);
           }
         }
       });
@@ -90,12 +90,7 @@ public interface MergeVersion {
     public void applyText(final String text, final Project project) {
       ApplicationManager.getApplication().runWriteAction(new Runnable() {
         public void run() {
-          CommandProcessor.getInstance().executeCommand(project, new Runnable() {
-            @Override
-            public void run() {
-              doApplyText(text, project);
-            }
-          }, "Merge changes", null);
+          doApplyText(text, project);
         }
       });
     }
@@ -109,8 +104,8 @@ public interface MergeVersion {
     }
 
     public static void reportProjectFileChangeIfNeeded(Project project, VirtualFile file) {
-      if (file != null && ! file.isDirectory()) {
-        if (ProjectCoreUtil.isProjectOrWorkspaceFile(file) || isProjectFile(file)) {
+      if (file != null) {
+        if (ProjectUtil.isProjectOrWorkspaceFile(file) || isProjectFile(file)) {
           ProjectManagerEx.getInstanceEx().saveChangedProjectFile(file, project);
         }
       }
@@ -120,8 +115,8 @@ public interface MergeVersion {
     public static Runnable prepareToReportChangedProjectFiles(final Project project, final Collection<VirtualFile> files) {
       final Set<VirtualFile> vfs = new HashSet<VirtualFile>();
       for (VirtualFile vf : files) {
-        if (vf != null && ! vf.isDirectory()) {
-          if (ProjectCoreUtil.isProjectOrWorkspaceFile(vf) || isProjectFile(vf)) {
+        if (vf != null) {
+          if (ProjectUtil.isProjectOrWorkspaceFile(vf) || isProjectFile(vf)) {
             vfs.add(vf);
           }
         }
